@@ -7,11 +7,18 @@
 /// set by the World Cubing Association in WCA regulation 4d1.
 ///
 /// reference: https://www.worldcubeassociation.org/regulations#4d1
+
+#[allow(unused)]
 const U: usize = 0;
+#[allow(unused)]
 const F: usize = 1;
+#[allow(unused)]
 const R: usize = 2;
+#[allow(unused)]
 const B: usize = 3;
+#[allow(unused)]
 const L: usize = 4;
+#[allow(unused)]
 const D: usize = 5;
 
 #[derive(Debug)]
@@ -38,6 +45,7 @@ fn rotate_face_prime(r: &mut[u8; 9]) {
     *r = [r[6], r[3], r[0], r[7], r[4], r[1], r[8], r[5], r[2]];
 }
 
+#[allow(unused)]
 impl Cube {
     pub fn new() -> Cube {
         Cube {
@@ -401,6 +409,7 @@ impl Cube {
         self.faces[R] = [r[0], r[1], r[2], r[3], r[4], r[5], l[2], l[1], l[0]];
     }
 
+    /// twists the L side clockwise (L)
     pub fn twist_l(&mut self) {
         let b = self.faces[B];
         let u = self.faces[U];
@@ -408,6 +417,11 @@ impl Cube {
         let d = self.faces[D];
 
         rotate_face(&mut self.faces[L]);
+
+        self.faces[B] = [b[0], b[1], b[2], b[3], b[4], b[5], d[2], d[1], d[0]];
+        self.faces[F] = [u[0], u[1], u[2], f[3], f[4], f[5], f[6], f[7], f[8]];
+        self.faces[D] = [f[0], f[1], f[2], d[3], d[4], d[5], d[6], d[7], d[8]];
+        self.faces[U] = [b[8], b[7], b[6], u[3], u[4], u[5], u[6], u[7], u[8]];
     }
 
     pub fn twist_l_prime(&mut self) {
@@ -417,6 +431,11 @@ impl Cube {
         let d = self.faces[D];
 
         rotate_face_prime(&mut self.faces[L]);
+
+        self.faces[B] = [b[0], b[1], b[2], b[3], b[4], b[5], u[2], u[1], u[0]];
+        self.faces[F] = [d[0], d[1], d[2], f[3], f[4], f[5], f[6], f[7], f[8]];
+        self.faces[D] = [b[8], b[7], b[6], d[3], d[4], d[5], d[6], d[7], d[8]];
+        self.faces[U] = [f[0], f[1], f[2], u[3], u[4], u[5], u[6], u[7], u[8]];
     }
 
     pub fn twist_l2(&mut self) {
@@ -426,6 +445,11 @@ impl Cube {
         let d = self.faces[D];
 
         self.faces[L].reverse();
+
+        self.faces[U] = [d[0], d[1], d[2], u[3], u[4], u[5], u[6], u[7], u[8]];
+        self.faces[D] = [u[0], u[1], u[2], d[3], d[4], d[5], d[6], d[7], u[8]];
+        self.faces[F] = [b[8], b[7], b[6], f[3], f[4], f[5], f[6], f[7], f[8]];
+        self.faces[B] = [b[0], b[1], b[2], b[3], b[4], b[5], f[2], f[1], f[0]];
     }
 
     pub fn twist_d(&mut self) {
@@ -435,6 +459,11 @@ impl Cube {
         let r = self.faces[R];
         
         rotate_face(&mut self.faces[D]);
+
+        self.faces[B] = [b[0], b[1], r[2], b[3], b[4], r[5], b[6], b[7], r[8]];
+        self.faces[F] = [f[0], f[1], l[2], f[3], f[4], l[5], f[6], f[7], l[8]];
+        self.faces[R] = [r[0], r[1], f[2], r[3], r[4], f[5], r[6], r[7], f[8]];
+        self.faces[L] = [l[0], l[1], b[2], l[3], l[4], b[5], l[6], l[7], b[8]];
     }
 
     pub fn twist_d_prime(&mut self) {
@@ -444,6 +473,11 @@ impl Cube {
         let r = self.faces[R];
         
         rotate_face_prime(&mut self.faces[D]);
+
+        self.faces[B] = [b[0], b[1], l[2], b[3], b[4], l[5], b[6], b[7], l[8]];
+        self.faces[F] = [f[0], f[1], r[2], f[3], f[4], r[5], f[6], f[7], r[8]];
+        self.faces[R] = [r[0], r[1], b[2], r[3], r[4], b[5], r[6], r[7], b[8]];
+        self.faces[L] = [l[0], l[1], f[2], l[3], l[4], f[5], l[6], l[7], f[8]];
     }
 
     pub fn twist_d2(&mut self) {
@@ -453,5 +487,10 @@ impl Cube {
         let r = self.faces[R];
         
         self.faces[D].reverse();
+
+        self.faces[B] = [b[0], b[1], f[2], b[3], b[4], f[5], b[6], b[7], f[8]];
+        self.faces[F] = [f[0], f[1], b[2], f[3], f[4], b[5], f[6], f[7], b[8]];
+        self.faces[R] = [r[0], r[1], l[2], r[3], r[4], l[5], r[6], r[7], l[8]];
+        self.faces[L] = [l[0], l[1], r[2], l[3], l[4], r[5], l[6], l[7], r[8]];
     }
 }
