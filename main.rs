@@ -1,7 +1,7 @@
 mod vm;
 mod lang;
 
-use std::env;
+use std::{env, time::Instant};
 use lang::compiler::compile;
 use vm::vm::VM;
 
@@ -9,18 +9,21 @@ fn main() {
     let mut args = env::args_os();
 
     if args.len() < 1 { 
-        println!("no arguments! bad!");
+        println!("you must supply the path to your program as an argument");
         return;
     }
 
-    println!("{:?}", args);
+    let start = Instant::now();
 
-    match args.nth(0) {
+    let code = match args.nth(1) {
         Some(file) =>  {
-            println!("{:?}", compile(file.into_string().unwrap()))
+            compile(file.into_string().unwrap())
         }
         None => return,
-    }
+    };
 
-    let vm = VM::new();
+    println!("Compiled in {:?}", start.elapsed());
+
+    let mut vm = VM::new();
+    vm.interpret_code(code);
 }

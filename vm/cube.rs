@@ -9,19 +9,19 @@
 /// reference: https://www.worldcubeassociation.org/regulations#4d1
 
 #[allow(unused)]
-const U: usize = 0;
+pub const U: usize = 0;
 #[allow(unused)]
-const F: usize = 1;
+pub const F: usize = 1;
 #[allow(unused)]
-const R: usize = 2;
+pub const R: usize = 2;
 #[allow(unused)]
-const B: usize = 3;
+pub const B: usize = 3;
 #[allow(unused)]
-const L: usize = 4;
+pub const L: usize = 4;
 #[allow(unused)]
-const D: usize = 5;
+pub const D: usize = 5;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Cube {
     /// a face is 9 bytes.
     /// layout of a face by indices:
@@ -32,7 +32,7 @@ pub struct Cube {
     ///
     /// `2 5 8`
     /// Where 0 is top left, and 8 is bottom right.
-    faces: [[u8; 9]; 6], // u8[9][6]
+    pub faces: [[u8; 9]; 6], // u8[9][6]
 }
 
 /// rotates a face 90 degrees clockwise

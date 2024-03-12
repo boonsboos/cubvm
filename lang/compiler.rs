@@ -5,7 +5,6 @@ use super::codegen::{self, Code};
 
 use super::token;
 
-
 pub fn compile(path: String) -> Code {
 
     let source_r = fs::read_to_string(path.clone());

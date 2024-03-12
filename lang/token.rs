@@ -1,6 +1,6 @@
 
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TokenKind {
     U, Uprime, U2, // 0, 1, 2
     F, Fprime, F2, // 3, 4, 5
@@ -21,6 +21,9 @@ pub enum TokenKind {
     // NOTE optionally add wide moves
 
     Semicolon,
+    Label(usize),
+    Comma,
+
     Newline,
     Unused,
     SOF,
@@ -76,6 +79,9 @@ pub fn tokenize(lines: Vec<String>) -> Vec<TokenKind> {
 
                 "\n" => tokens.push(TokenKind::Newline),
                 ";" => tokens.push(TokenKind::Semicolon),
+                "," => tokens.push(TokenKind::Comma),
+                ":" => tokens.push(TokenKind::Label(tokens.len())), // push next instruction to the stack
+                "//" => break, // continue on the next line
                 _ => continue
             }
         }
