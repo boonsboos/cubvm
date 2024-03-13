@@ -45,6 +45,16 @@ fn rotate_face_prime(r: &mut[u8; 9]) {
     *r = [r[6], r[3], r[0], r[7], r[4], r[1], r[8], r[5], r[2]];
 }
 
+// to save time and screen space
+trait Sum {
+    fn sum(&self) -> u8;
+}
+impl Sum for [u8; 9] {
+    fn sum(&self) -> u8 {
+        return self[0] + self[1] + self[2] + self[3] + self[4] + self[5] + self[6] + self[7] + self[8];
+    }
+}
+
 #[allow(unused)]
 impl Cube {
     pub fn new() -> Cube {
@@ -57,6 +67,18 @@ impl Cube {
                 [0x08; 9], // orange 9 * 8
                 [0x10; 9], // yellow 9 * 16
             ]
+        }
+    }
+
+    pub fn sum_face(&self, face: usize) -> u8 {
+        match face {
+            U => self.faces[U].sum(),
+            F => self.faces[F].sum(),
+            R => self.faces[R].sum(),
+            B => self.faces[B].sum(),
+            L => self.faces[L].sum(),
+            D => self.faces[D].sum(),
+            _ => todo!() // impossible value
         }
     }
 

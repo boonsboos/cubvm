@@ -1,36 +1,46 @@
-use crate::vm::cube;
+use crate::vm::cube::{self, Cube};
 use crate::lang::codegen;
 
-use super::cube::Cube;
-
 pub struct VM {
-    stack: [u8; 128],
+    stack: [Cube; 128],
     stack_pointer: usize,
-    mem: [cube::Cube; 8192], // 8K memory
+    mem: [Cube; 8192], // 8K memory
     mem_pointer: usize,
+
+    program_counter: usize,
+    return_stack: Vec<usize>,
 }
 
 impl VM {
     pub fn new() -> VM {
         VM {
-            stack: [0; 128],
+            stack: [Cube::new(); 128],
             stack_pointer: 0,
-            mem: [cube::Cube::default(); 8192],
+            mem: [Cube::default(); 8192],
             mem_pointer: 1, // 0 address = null
+
+            program_counter: 1,
+            return_stack: vec![],
         }
     }
 
     // this initializes the memory 
     pub fn interpret_code(&mut self, code: codegen::Code) {
 
-        assert!(code.movesets[0] == 0xB0u8, "Corrupt bytecode!");
+        println!("{:?}", &code.movesets);
 
-        let mut i: usize = 1;
-        while i < code.movesets.len() {
-            let mut immediate = Cube::new();
-            let mut current = Cube::new();
+        assert!(code.movesets[0] == 0x00B0, "Corrupt bytecode!");
 
-            match code.movesets[i] {
+        let mut immediate = Cube::new();
+        let mut current = Cube::new();
+
+        while self.program_counter < code.movesets.len() {
+
+            if self.return_stack.len() > 1024 {
+                panic!("overflow of return stack (len > 1024)");
+            }
+
+            match code.movesets[self.program_counter] {
                 0 => current.twist_u(),
                 1 => current.twist_u_prime(),
                 2 => current.twist_u2(),
@@ -60,44 +70,68 @@ impl VM {
                 25 => current.rotate_z_prime(),
                 26 => current.rotate_z2(),
 
-                b';' => {
-                    self.interpret_cube(current, immediate);
+                0x003A => { // :
+                    self.return_stack.push(self.program_counter);
+                    self.program_counter = code.movesets[self.program_counter+1].into() // jump
                 }
-                b',' => {
+                0x003B => { // ;
+                    self.interpret_cube(current, immediate);
+                    current = Cube::new();
+                    immediate = Cube::new();
+                }
+                0x003D => {
+                    if self.stack[self.stack_pointer].sum_face(cube::U) > 0 {
+                        self.return_stack.push(self.program_counter);
+                        self.program_counter = code.movesets[self.program_counter+1].into() // jump conditionally
+                    }
+                }
+                0x002C => { // ,
                     immediate = current;
                     current = Cube::new();
                 }
                 _ => {}
             }
 
-            i += 1;
+            self.program_counter += 1;
         }
     }
 
     fn interpret_cube(&mut self, cube: Cube, immediate: Cube) {
-        let u = cube.faces[cube::U];
 
-        let opcode = u[0] + u[1] + u[2] + u[3] + u[4] + u[5] +u[6] + u[7] + u[8];
-
-        let u2 = immediate.faces[cube::U];
-        let imm = u2[0] + u2[1] + u2[2] + u2[3] + u2[4] + u2[5] +u2[6] + u2[7] + u2[8];
+        let opcode = cube.sum_face(cube::U);
+        let imm = immediate.sum_face(cube::U);
 
         match opcode {
             0 => {} // NOP
-            1 => self.stack[self.stack_pointer] += 1, // INC [sp]
-            2 => self.stack[self.stack_pointer] -= 1, // DEC [sp]
-            3 => { // PSH imm
+            1 => { // PSH immediate
+                if self.stack_pointer == 128 { panic!("cannot push full stack!") }
+
                 self.stack_pointer += 1;
-                self.stack[self.stack_pointer] = imm;
+                self.stack[self.stack_pointer] = immediate;
             }
-            4 => { // POP
-                self.stack[self.stack_pointer] = 0;
+            2 => { // POP
+                if self.stack_pointer == 0 { panic!("cannot pop empty stack!") }
+
+                self.stack[self.stack_pointer] = Cube::new();
                 self.stack_pointer -= 1;
             }
-            5 => self.stack[self.stack_pointer] += imm, // ADD imm
-            6 => self.stack[self.stack_pointer] -= imm,  // SUB imm
-            7 => self.stack[self.stack_pointer] *= imm, // MUL imm
-            8 => {}, // MEM [mp] = imm 
+            3 => self.mem[self.mem_pointer] = immediate, // MEM [mp] = imm
+            4 => { // SMS [mp] -> [sp]
+                let t = self.stack[self.stack_pointer];
+                self.stack[self.stack_pointer] = self.mem[self.mem_pointer];
+                self.mem[self.mem_pointer] = t; 
+            }
+            5 => { // SSM [sp] -> [mp]
+                let t = self.mem[self.mem_pointer];
+                self.mem[self.mem_pointer] = self.stack[self.stack_pointer];
+                self.stack[self.stack_pointer] = t;   
+            }
+            6 => { // RET
+                match self.return_stack.pop() {
+                    Some(i) => self.program_counter = i,
+                    None => panic!("popped empty return stack!"),
+                }
+            }
             _ => {}
         }
 

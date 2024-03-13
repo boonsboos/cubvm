@@ -1,6 +1,6 @@
 
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum TokenKind {
     U, Uprime, U2, // 0, 1, 2
     F, Fprime, F2, // 3, 4, 5
@@ -12,6 +12,7 @@ pub enum TokenKind {
     X, Xprime, X2, // 18, 19, 20
     Y, Yprime, Y2, // 21, 22, 23
     Z, Zprime, Z2, // 24, 25, 26
+    Asterisk, // 27, noop
     
     // these get transformed, they're just there for the programmer
     M, Mprime, M2,
@@ -21,7 +22,8 @@ pub enum TokenKind {
     // NOTE optionally add wide moves
 
     Semicolon,
-    Label(usize),
+    JumpLabel(String),
+    ConditionalLabel(String),
     Comma,
 
     Newline,
@@ -36,7 +38,15 @@ pub fn tokenize(lines: Vec<String>) -> Vec<TokenKind> {
 
     for line in lines {
 
-        for token_part in line.split(' ') {
+        'parts: for token_part in line.split(' ') {
+
+            if token_part.starts_with(":") {
+                tokens.push(TokenKind::JumpLabel(token_part.replace(":", "")))
+            }
+            if token_part.starts_with("=") {
+                tokens.push(TokenKind::ConditionalLabel(token_part.replace("=", "")))
+            }
+
             match token_part {
                 "U" => tokens.push(TokenKind::U),
                 "U'" | "Up" => tokens.push(TokenKind::Uprime),
@@ -66,6 +76,7 @@ pub fn tokenize(lines: Vec<String>) -> Vec<TokenKind> {
                 "Z" => tokens.push(TokenKind::Z),
                 "Z'" | "Zp" => tokens.push(TokenKind::Zprime),
                 "Z2" => tokens.push(TokenKind::Z2),
+                "*" => tokens.push(TokenKind::Asterisk),
                 // slices
                 "M" => tokens.push(TokenKind::M),
                 "M'" | "Mp" => tokens.push(TokenKind::Mprime),
@@ -80,8 +91,8 @@ pub fn tokenize(lines: Vec<String>) -> Vec<TokenKind> {
                 "\n" => tokens.push(TokenKind::Newline),
                 ";" => tokens.push(TokenKind::Semicolon),
                 "," => tokens.push(TokenKind::Comma),
-                ":" => tokens.push(TokenKind::Label(tokens.len())), // push next instruction to the stack
-                "//" => break, // continue on the next line
+
+                "//" => break 'parts, // continue on the next line
                 _ => continue
             }
         }

@@ -1,17 +1,19 @@
-use std::fmt::Error;
+use std::{collections::HashMap, fmt::Error, process};
 
 use super::token::TokenKind;
 
 #[derive(Debug)]
 pub struct Code {
-    pub movesets: Vec<u8>,
+    pub movesets: Vec<u16>,
 }
 
 pub fn generate(tokens: Vec<TokenKind>) -> Result<Code, Error> {
 
     let mut line_count: usize = 1;
 
-    let mut buf: Vec<u8> = vec![0xB0u8]; // SOF written above
+    let mut label_map: HashMap<TokenKind, u16> = HashMap::new();
+
+    let mut buf: Vec<u16> = vec![0xB0u16]; // SOF written above
     let mut i: usize = 1;
     while i < tokens.len()-1 { // saves reading past EOF
         if tokens[i] == TokenKind::Newline {
@@ -50,6 +52,8 @@ pub fn generate(tokens: Vec<TokenKind>) -> Result<Code, Error> {
                 TokenKind::Z => buf.push(24),
                 TokenKind::Zprime => buf.push(25),
                 TokenKind::Z2 => buf.push(26),
+
+                TokenKind::Asterisk => buf.push(27),
 
                 // slice moves are sort of macros
                 TokenKind::M => {
@@ -98,8 +102,42 @@ pub fn generate(tokens: Vec<TokenKind>) -> Result<Code, Error> {
                     buf.push(23); // Y2
                 }
 
-                TokenKind::Semicolon => buf.push(b';'),
-                TokenKind::EOF => break,
+                TokenKind::Semicolon => buf.push(b';'.into()),
+                TokenKind::Comma => buf.push(b','.into()),
+
+                TokenKind::JumpLabel(_) => {
+
+                    if label_map.contains_key(&tokens[i]) {
+                        buf.push(0x003Au16); // insert an ascii : to signal a jump label
+                        buf.push(*label_map.get(&tokens[i]).unwrap())
+                    } else {
+                        // check the unknown label isn't defined in the middle of the line
+                        if ![TokenKind::SOF, TokenKind::Newline].contains(&tokens[i-1]) {
+                            println!("error on line {}: Labels can only be defined at the start of a new line", line_count);
+                            process::exit(1);
+                        }
+
+                        label_map.insert(tokens[i].clone(), buf.len().try_into().unwrap());
+                        //buf.push(buf.len().try_into().unwrap()) // always point to the next instruction
+                    }
+                }
+                TokenKind::ConditionalLabel(_) => {
+
+                    if label_map.contains_key(&tokens[i]) {
+                        buf.push(0x003Du16); // insert an ascii = to signal a conditional label
+                        buf.push(*label_map.get(&tokens[i]).unwrap())
+                    } else {
+                        // check the unknown label isn't defined in the middle of the line
+                        if ![TokenKind::SOF, TokenKind::Newline].contains(&tokens[i-1]) {
+                            println!("error on line {}: Labels can only be defined at the start of a new line", line_count);
+                            process::exit(1);
+                        }
+
+                        label_map.insert(tokens[i].clone(), buf.len().try_into().unwrap());
+                        //buf.push(buf.len().try_into().unwrap()) // always point to the next instruction
+                    }
+                }
+                TokenKind::EOF => break, // should actually panic but this works too
                 _ => {},
             }
         }
